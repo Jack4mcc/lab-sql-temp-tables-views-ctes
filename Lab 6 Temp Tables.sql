@@ -1,5 +1,6 @@
 USE sakila;
 
+DROP VIEW IF EXISTS customer_summary3;
 
 CREATE VIEW customer_summary3 AS
 SELECT 
@@ -14,41 +15,34 @@ GROUP BY
     c.customer_id
 ORDER BY 
     rental_count DESC;
-    
-    SELECT *
-    FROM customer_summary3;
 
+SELECT *
+FROM customer_summary3;
 
 SELECT *
 FROM rental;
 
-SELECT *
-FROM payment;
-
 CREATE TEMPORARY TABLE customer_payment_summary AS (
-SELECT cs.customer_id, email, SUM(amount) AS total_paid
-FROM customer_summary3 cs
-INNER JOIN payment p
-ON cs.customer_id = p.customer_id
-GROUP BY cs.customer_id);
+    SELECT 
+        crs.customer_id,
+        SUM(p.amount) AS total_paid
+    FROM 
+        customer_summary3 AS crs
+        JOIN rental AS r ON crs.customer_id = r.customer_id
+        JOIN payment AS p ON r.rental_id = p.rental_id
+    GROUP BY 
+        crs.customer_id
+);
 
+SELECT *
+FROM customer_payment_summary;
 
 WITH customer_summary_report AS(
 SELECT 
-    cs.customer_name,
-    cs.email,
-    cs.rental_count,
-    cs.total_paid
+    crs.customer_name,
+    crs.email,
+    crs.rental_count,
+    cps.total_paid
 FROM 
-    customer_summary3 AS cs
-    JOIN customer_summary3 AS cps ON cs.customer_id = cps.customer_id)
-
-SELECT 
-    *,
-    total_paid / rental_count AS average_payment_per_rental
-FROM 
-    customer_summary_report
-ORDER BY 
-    rental_count DESC;
-
-
+    customer_rental_summary AS crs
+    JOIN customer_payment_summary AS cps ON crs.customer_id = cps.customer_id);
